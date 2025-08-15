@@ -1,5 +1,7 @@
-```python
 # app/app.py  (MARKER: MODERN_UI, AUTO_MODE, CHECKPOINT_STATUS)
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import re, time, random, math
 from pathlib import Path
 from typing import Optional, List, Tuple
@@ -11,7 +13,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-from models.tiny_transformer import TinyTransformer
+try:
+    from models.tiny_transformer import TinyTransformer
+except ImportError:
+    st.error("Could not import TinyTransformer. Ensure 'models/tiny_transformer.py' exists.")
+    st.stop()
 
 # ---------- Page ----------
 st.set_page_config(page_title="Transformer Circuit Studio — Auto Addition/Precalc", layout="wide")
@@ -20,10 +26,20 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 
 # ===== Styling helpers =====
 def load_css():
-    css_path = (BASE_DIR / "app" / "assets" / "styles.css")
+    css_path = BASE_DIR / "app" / "assets" / "styles.css"
+    default_css = """
+    .hero { text-align: center; padding: 2rem; }
+    .hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .hero p { font-size: 1.2rem; color: #888; }
+    .pill { background: #333; padding: 0.3rem 0.8rem; border-radius: 1rem; margin-right: 0.5rem; }
+    .panel { background: #1f1f1f; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    """
     if css_path.exists():
         with open(css_path, "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
+        st.warning(f"CSS file not found at {css_path}. Using default styles.")
 
 def hero(title: str, subtitle: str = ""):
     st.markdown(f"""
@@ -88,7 +104,11 @@ TASKS = {
 
 # ---------- Helpers ----------
 def encode(s: str, stoi: dict) -> torch.Tensor:
-    return torch.tensor([stoi[c] for c in s], dtype=torch.long)
+    try:
+        return torch.tensor([stoi[c] for c in s], dtype=torch.long)
+    except KeyError as e:
+        st.error(f"Invalid character in expression: {e}")
+        return torch.tensor([], dtype=torch.long)
 
 def is_addition_expr(expr: str) -> bool:
     return re.match(r"^\s*\d+\+\d+=\s*$", expr) is not None
@@ -102,12 +122,13 @@ def precalc_truth(expr: str) -> Optional[int]:
     try:
         s = expr.strip().rstrip("=")
         s = s.replace("^", "**").replace("/", "//")
-        if re.search(r"[^0-9+\*\(\)\s/%-]", s):
+        if re.search(r"[^0-9+\*\(\)\s/%^-]", s):
             return None
         val = eval(s, {"__builtins__": None}, {})
         if isinstance(val, int) and -200 <= val <= 200:
             return int(val)
-    except Exception:
+    except Exception as e:
+        st.error(f"Error evaluating expression: {e}")
         return None
     return None
 
@@ -172,20 +193,24 @@ def make_batch_precalc(bs=256, stoi=None, device="cpu", offset=200, max_len=32):
 @st.cache_resource
 def load_model(task_name: str) -> TinyTransformer:
     cfg = TASKS[task_name]
-    model = TinyTransformer(
-        vocab_size=len(cfg["vocab"]),
-        num_classes=cfg["num_classes"],
-        max_len=cfg["max_len"],
-        **cfg["model_kwargs"]
-    )
-    ckpt = cfg["ckpt"]
-    if ckpt.exists():
-        model.load_state_dict(torch.load(ckpt, map_location="cpu"))
-        st.success(f"[{task_name}] Loaded checkpoint: {ckpt}")
-    else:
-        st.info(f"[{task_name}] No checkpoint found at: {ckpt}")
-    model.eval()
-    return model
+    try:
+        model = TinyTransformer(
+            vocab_size=len(cfg["vocab"]),
+            num_classes=cfg["num_classes"],
+            max_len=cfg["max_len"],
+            **cfg["model_kwargs"]
+        )
+        ckpt = cfg["ckpt"]
+        if ckpt.exists():
+            model.load_state_dict(torch.load(ckpt, map_location="cpu"))
+            st.success(f"[{task_name}] Loaded checkpoint: {ckpt}")
+        else:
+            st.info(f"[{task_name}] No checkpoint found at: {ckpt}")
+        model.eval()
+        return model
+    except Exception as e:
+        st.error(f"Error loading model for {task_name}: {e}")
+        return None
 
 def train_quick(task_name: str, steps=800, lr=3e-4, bs=256):
     cfg = TASKS[task_name]
@@ -322,8 +347,13 @@ def resolve_task(expr: str) -> str:
 def predict_value_and_attn(task_name: str, expr: str):
     cfg = TASKS[task_name]
     stoi = {c:i for i,c in enumerate(cfg["vocab"])}
-    x = encode(expr, stoi).unsqueeze(0)
+    x = encode(expr, stoi)
+    if x.numel() == 0:  # Check for empty tensor due to invalid input
+        return None, None, None, None, None, None, None
+    x = x.unsqueeze(0)
     model = load_model(task_name)
+    if model is None:
+        return None, None, None, None, None, None, None
     hs, attns = forward_collect(model, x, return_attn=True)
     logits = forward_from(model, hs[0], 0)
     offset = cfg.get("offset", 0)
@@ -343,6 +373,10 @@ def panel_open():
 def panel_close():
     st.markdown('</div>', unsafe_allow_html=True)
 
+# Initialize session state
+if "input_expr" not in st.session_state:
+    st.session_state["input_expr"] = TASKS["Addition"]["example"]
+
 # Top status pills (mode + which ckpt the page will use)
 _ckpt_info = []
 for name in ("Addition", "Precalc Eval"):
@@ -355,7 +389,7 @@ with tab1:
     panel_open()
     c1, c2 = st.columns([2,1])
     default_expr = TASKS["Addition"]["example"] if mode == "Addition" else TASKS["Precalc Eval"]["example"]
-    expr = c2.text_input("Input expression", value=default_expr, key="input_expr",
+    expr = c2.text_input("Input expression", value=st.session_state["input_expr"], key="input_expr",
                          help="Ends with '='. Auto mode picks Addition if it matches 'd+d=', else Precalc.")
     col_pred, col_rand = c2.columns(2)
     if col_pred.button("Predict"):
@@ -369,59 +403,62 @@ with tab1:
                 st.error("Invalid Precalc input. Use digits and + - * / ^ % ( ), end with '='. Integer result required.")
         else:
             pred, attns, model, stoi, cfg, preds_per_layer, logits = predict_value_and_attn(chosen, expr)
-            m1, m2 = c1.columns(2)
-            m1.metric("Predicted", pred)
-            m2.metric("Ground truth", truth)
-
-            # Logit Lens
-            st.subheader("Logit Lens")
-            df_lens = pd.DataFrame({"Layer": range(len(preds_per_layer)), "Predicted Value": preds_per_layer})
-            st.table(df_lens)
-
-            # Prediction Probabilities
-            st.subheader("Prediction Confidence")
-            offset = cfg.get("offset", 0)
-            min_val = -offset
-            max_val = cfg["num_classes"] - 1 - offset
-            probs = torch.softmax(logits, -1)[0].cpu().numpy()
-            if cfg["num_classes"] < 50:
-                xr = list(range(min_val, max_val + 1))
-                y = probs
+            if pred is None:
+                st.error(f"Prediction failed for {chosen}. Ensure model and input are valid.")
             else:
-                span = 20
-                low = max(min_val, pred - span)
-                high = min(max_val, pred + span)
-                idx_low = low + offset
-                idx_high = high + offset + 1
-                xr = list(range(low, high + 1))
-                y = probs[idx_low:idx_high]
-            df_prob = pd.DataFrame({"Value": xr, "Probability": y})
-            df_prob["Type"] = "Other"
-            df_prob.loc[df_prob["Value"] == pred, "Type"] = "Predicted"
-            if pred != truth:
-                df_prob.loc[df_prob["Value"] == truth, "Type"] = "Ground Truth"
-            fig_prob = px.bar(df_prob, x="Value", y="Probability", color="Type",
-                              color_discrete_map={"Predicted": "lime", "Ground Truth": "red", "Other": "royalblue"})
-            st.plotly_chart(style_plot(fig_prob, "Prediction Probabilities"), use_container_width=True)
+                m1, m2 = c1.columns(2)
+                m1.metric("Predicted", pred)
+                m2.metric("Ground truth", truth)
 
-            # Attention heatmaps (if we have a checkpoint and attention tensors)
-            if cfg["ckpt"].exists() and attns and attns[0] is not None:
-                st.subheader("Attention Heatmaps")
-                tokens = list(expr)
-                for li, A in enumerate(attns):  # A shape: (1, heads, S, S) or (heads, S, S) depending on PyTorch
-                    A = A[0] if A.dim() == 4 else A  # ensure (heads, S, S)
-                    for h in range(A.shape[0]):
-                        st.caption(f"Layer {li}  •  Head {h}")
-                        fig = px.imshow(
-                            A[h].cpu().numpy(),
-                            x=tokens, y=tokens, origin="upper",
-                            labels=dict(x="Key tokens", y="Query tokens", color="Attn"),
-                            title=f"Layer {li} - Head {h}"
-                        )
-                        fig = style_plot(fig)
-                        st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning(f"No checkpoint for {chosen}. Use the sidebar to train, then try again.")
+                # Logit Lens
+                st.subheader("Logit Lens")
+                df_lens = pd.DataFrame({"Layer": range(len(preds_per_layer)), "Predicted Value": preds_per_layer})
+                st.table(df_lens)
+
+                # Prediction Probabilities
+                st.subheader("Prediction Confidence")
+                offset = cfg.get("offset", 0)
+                min_val = -offset
+                max_val = cfg["num_classes"] - 1 - offset
+                probs = torch.softmax(logits, -1)[0].cpu().numpy()
+                if cfg["num_classes"] < 50:
+                    xr = list(range(min_val, max_val + 1))
+                    y = probs
+                else:
+                    span = 20
+                    low = max(min_val, pred - span)
+                    high = min(max_val, pred + span)
+                    idx_low = low + offset
+                    idx_high = high + offset + 1
+                    xr = list(range(low, high + 1))
+                    y = probs[idx_low:idx_high]
+                df_prob = pd.DataFrame({"Value": xr, "Probability": y})
+                df_prob["Type"] = "Other"
+                df_prob.loc[df_prob["Value"] == pred, "Type"] = "Predicted"
+                if pred != truth:
+                    df_prob.loc[df_prob["Value"] == truth, "Type"] = "Ground Truth"
+                fig_prob = px.bar(df_prob, x="Value", y="Probability", color="Type",
+                                  color_discrete_map={"Predicted": "lime", "Ground Truth": "red", "Other": "royalblue"})
+                st.plotly_chart(style_plot(fig_prob, "Prediction Probabilities"), use_container_width=True)
+
+                # Attention heatmaps
+                if cfg["ckpt"].exists() and attns and attns[0] is not None:
+                    st.subheader("Attention Heatmaps")
+                    tokens = list(expr)
+                    for li, A in enumerate(attns):
+                        A = A[0] if A.dim() == 4 else A  # ensure (heads, S, S)
+                        for h in range(A.shape[0]):
+                            st.caption(f"Layer {li}  •  Head {h}")
+                            fig = px.imshow(
+                                A[h].cpu().numpy(),
+                                x=tokens, y=tokens, origin="upper",
+                                labels=dict(x="Key tokens", y="Query tokens", color="Attn"),
+                                title=f"Layer {li} - Head {h}"
+                            )
+                            fig = style_plot(fig)
+                            st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning(f"No checkpoint for {chosen}. Use the sidebar to train, then try again.")
     if col_rand.button("Random"):
         if mode == "Addition":
             a = random.randint(0, 99)
@@ -443,4 +480,3 @@ with tab1:
     panel_close()
 
 st.caption(f"Active file: {__file__}")
-```
