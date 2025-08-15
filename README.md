@@ -59,7 +59,7 @@ It includes:
 ## Workflow
 ```mermaid
 flowchart TD
-  %% -------- Styles (dark, professional) --------
+  %% ---- Styles (dark, clean) ----
   classDef startEnd fill:#0B1220,stroke:#7B5CFF,stroke-width:2px,color:#EAEFF7;
   classDef action   fill:#121826,stroke:#2B395B,stroke-width:1.2px,color:#EAEFF7;
   classDef decision fill:#172235,stroke:#00D6D6,stroke-width:2px,color:#EAEFF7;
@@ -67,51 +67,51 @@ flowchart TD
   classDef artifact fill:#0C1C20,stroke:#4DB6AC,stroke-width:1.5px,color:#DFF7F7;
   classDef optional fill:#1A1F2E,stroke:#9AA4AF,stroke-width:1px,color:#CFD6DF;
 
-  %% -------- Setup lane --------
+  %% ---- Setup ----
   subgraph L0[Setup]
     direction TB
     A([Start]):::startEnd
-    B[Clone repository]:::action
-    C[Create virtual env .venv]:::action
-    D[Install dependencies]:::action
+    B[Clone repo]:::action
+    C[Create venv]:::action
+    D[Install deps]:::action
     A --> B --> C --> D
   end
 
-  %% -------- Train lane --------
-  subgraph L1[Train (CPU)]
+  %% ---- Train ----
+  subgraph L1[Train CPU]
     direction TB
     E{Choose task}:::decision
-    F[Train Addition model]:::action
-    G[Train Precalc model]:::action
-    H[[Save checkpoint: addition_tiny.pt]]:::artifact
-    I[[Save checkpoint: precalc_tiny.pt]]:::artifact
+    F[Train Addition]:::action
+    G[Train Precalc]:::action
+    H[Save addition_tiny.pt]:::artifact
+    I[Save precalc_tiny.pt]:::artifact
     E -->|Addition| F --> H
     E -->|Precalc| G --> I
   end
 
-  %% Merge
+  %% Merge to app
   J([Checkpoint ready]):::output
   D --> E
   H --> J
   I --> J
 
-  %% -------- App lane --------
+  %% ---- App ----
   subgraph L2[Streamlit App]
     direction TB
-    K[Run app: streamlit run app/app.py]:::action
+    K[Run app]:::action
     L{Select mode}:::decision
-    M[Input expression (end with =)]:::action
+    M[Input expression]:::action
     N[Predict result]:::output
     K --> L --> M --> N
   end
 
-  %% -------- Interpret lane --------
-  subgraph L3[Interpretability]
+  %% ---- Interpret ----
+  subgraph L3[Interpret]
     direction TB
     O[Attention heatmaps]:::output
-    P[Logit lens and confidence]:::output
+    P[Logit lens]:::output
     Q{Meets expectations?}:::decision
-    R[Analyze model behavior]:::action
+    R[Analyze behavior]:::action
     N --> O
     N --> P
     O --> R
@@ -119,12 +119,12 @@ flowchart TD
     R --> Q
   end
 
-  %% -------- Iterate & Ship lane --------
+  %% ---- Iterate & Ship ----
   subgraph L4[Iterate and Ship]
     direction TB
-    S[Extend: new tasks or tools]:::action
-    T[Commit and push to GitHub]:::action
-    U[Optional: deploy to HF Spaces]:::optional
+    S[Extend tasks and tools]:::action
+    T[Commit and push]:::action
+    U[Deploy to HF Spaces]:::optional
     Q -- Yes --> T
     Q -- No  --> S --> T
     T --> U
@@ -133,8 +133,6 @@ flowchart TD
   %% Final link
   J --> K
 
-  %% Link styling
-  linkStyle default stroke:#6A7BAA,stroke-width:1.2px;
 ````
 ---
 ## Folder structure
