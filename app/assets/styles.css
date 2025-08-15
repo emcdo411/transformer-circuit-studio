@@ -1,0 +1,108 @@
+/* app/assets/styles.css */
+:root{
+  --bg:#0c0f14;
+  --panel:#121826;
+  --accent:#7b5cff;
+  --accent-2:#00d6d6;
+  --text:#e6e6e6;
+  --muted:#9aa4af;
+  --ring: rgba(123,92,255,.45);
+}
+
+/* Background gradient */
+.stApp {
+  background: radial-gradient(1200px 600px at 10% -10%, #1a2236 0%, transparent 60%) , 
+              radial-gradient(800px 400px at 110% 10%, #102030 0%, transparent 60%),
+              var(--bg);
+}
+
+/* Hide Streamlit chrome if you want it cleaner */
+header[data-testid="stHeader"] { background: transparent; }
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+
+/* Hero section */
+.hero {
+  background: linear-gradient(135deg, rgba(123,92,255,.22), rgba(0,214,214,.12));
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 22px 22px 10px 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.hero h1 {
+  margin: 0 0 6px 0;
+  font-size: 28px;
+  letter-spacing: .2px;
+}
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Panels / cards */
+.panel {
+  background: rgba(18,24,38,.88);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 16px 16px 8px 16px;
+}
+
+/* Inputs & buttons */
+.stTextInput > div > div > input,
+.stNumberInput input {
+  background: #0f1524 !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  color: var(--text) !important;
+  border-radius: 10px !important;
+}
+
+.stButton > button {
+  background: linear-gradient(135deg, var(--accent), #5a3dff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  box-shadow: 0 6px 18px rgba(123,92,255,.35);
+}
+.stButton > button:hover {
+  filter: brightness(1.07);
+  box-shadow: 0 8px 22px rgba(123,92,255,.5);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+  background: #0a0d15;
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.stTabs [data-baseweb="tab"] {
+  background: rgba(255,255,255,.04);
+  border-radius: 10px 10px 0 0;
+  padding: 10px 12px;
+}
+
+/* Metrics */
+[data-testid="stMetricValue"] {
+  color: #f1f3f6;
+  font-weight: 700;
+}
+[data-testid="stMetricLabel"] {
+  color: var(--muted);
+}
+
+/* Little status pills */
+.pill {
+  display:inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  font-size: 12px;
+  color: var(--text);
+  margin-right: 6px;
+}
