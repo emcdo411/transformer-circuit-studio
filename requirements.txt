@@ -1,0 +1,5 @@
+﻿streamlit
+plotly
+einops
+scikit-learn
+# torch can be added later if needed
