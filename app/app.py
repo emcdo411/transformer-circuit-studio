@@ -93,7 +93,7 @@ TASKS = {
     "Precalc Eval": {
         "ckpt": BASE_DIR / "models" / "checkpoints" / "precalc_tiny.pt",
         "vocab": list("0123456789+-*/^%() ="),
-        "offset": 200,  # map [-200,200] -> [0..400]
+        "offset": 200,
         "num_classes": 401,
         "max_len": 32,
         "model_kwargs": dict(d_model=96, nhead=3, num_layers=2, dim_ff=192),
@@ -193,17 +193,23 @@ def make_batch_precalc(bs=256, stoi=None, device="cpu", offset=200, max_len=32):
 @st.cache_resource
 def load_model(task_name: str) -> TinyTransformer:
     cfg = TASKS[task_name]
+    vocab_size = len(cfg["vocab"])
+    st.write(f"[{task_name}] Vocab size: {vocab_size}, Vocab: {cfg['vocab']}")
     try:
         model = TinyTransformer(
-            vocab_size=len(cfg["vocab"]),
+            vocab_size=vocab_size,
             num_classes=cfg["num_classes"],
             max_len=cfg["max_len"],
             **cfg["model_kwargs"]
         )
         ckpt = cfg["ckpt"]
         if ckpt.exists():
-            model.load_state_dict(torch.load(ckpt, map_location="cpu"))
-            st.success(f"[{task_name}] Loaded checkpoint: {ckpt}")
+            try:
+                model.load_state_dict(torch.load(ckpt, map_location="cpu"))
+                st.success(f"[{task_name}] Loaded checkpoint: {ckpt}")
+            except Exception as e:
+                st.error(f"[{task_name}] Failed to load checkpoint: {e}")
+                return None
         else:
             st.info(f"[{task_name}] No checkpoint found at: {ckpt}")
         model.eval()
@@ -292,10 +298,7 @@ def forward_collect(model: TinyTransformer, x: torch.Tensor, return_attn=True)\
     hs = [h]
     attns = []
     for layer in model.layers:
-        attn_out, attn_w = layer.attn(h, h, h, need_weights=return_attn, average_attn_weights=False)
-        h1 = layer.ln1(h + attn_out)
-        ff_out = layer.ff(h1)
-        h = layer.ln2(h1 + ff_out)
+        h, attn_w = layer(h, need_weights=return_attn)
         hs.append(h)
         if return_attn: attns.append(attn_w)
     return hs, attns
@@ -304,10 +307,11 @@ def forward_collect(model: TinyTransformer, x: torch.Tensor, return_attn=True)\
 def forward_from(model: TinyTransformer, h: torch.Tensor, start_layer: int) -> torch.Tensor:
     for li in range(start_layer, len(model.layers)):
         layer = model.layers[li]
-        attn_out, _ = layer.attn(h, h, h, need_weights=False)
-        h1 = layer.ln1(h + attn_out)
-        ff_out = layer.ff(h1)
-        h = layer.ln2(h1 + ff_out)
+        h, _ = layer(h, need_weights=False)
+        # attn_out, _ = layer.attn(h, h, h, need_weights=False)
+        # h1 = layer.ln1(h + attn_out)
+        # ff_out = layer.ff(h1)
+        # h = layer.ln2(h1 + ff_out)
     h_last = model.norm(h[:, -1, :])
     return model.head(h_last)
 
