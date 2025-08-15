@@ -1,108 +1,151 @@
 /* app/assets/styles.css */
-:root{
-  --bg:#0c0f14;
-  --panel:#121826;
-  --accent:#7b5cff;
-  --accent-2:#00d6d6;
-  --text:#e6e6e6;
-  --muted:#9aa4af;
-  --ring: rgba(123,92,255,.45);
+
+/* Define CSS variables for consistent theming */
+:root {
+  --bg: #0c0f14; /* Dark background */
+  --panel: #121826; /* Panel background */
+  --accent: #7b5cff; /* Primary accent */
+  --accent-2: #00d6d6; /* Secondary accent */
+  --text: #e6e6e6; /* Primary text */
+  --muted: #b0b8c1; /* Muted text (brighter for better contrast) */
+  --ring: rgba(123, 92, 255, 0.45); /* Ring/accent shadow */
 }
 
-/* Background gradient */
+/* Main app container with responsive gradient background */
 .stApp {
-  background: radial-gradient(1200px 600px at 10% -10%, #1a2236 0%, transparent 60%) , 
-              radial-gradient(800px 400px at 110% 10%, #102030 0%, transparent 60%),
-              var(--bg);
+  background: radial-gradient(
+      100vw 50vh at 10% 0%,
+      #1a2236 0%,
+      transparent 60%
+    ),
+    radial-gradient(80vw 40vh at 90% 10%, #102030 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh;
 }
 
-/* Hide Streamlit chrome if you want it cleaner */
-header[data-testid="stHeader"] { background: transparent; }
-#MainMenu { visibility: hidden; }
-footer { visibility: hidden; }
+/* Optionally hide Streamlit chrome for a cleaner UI */
+header[data-testid="stHeader"] {
+  background: transparent;
+}
+[data-testid="stMainMenu"] {
+  visibility: hidden; /* Changed from #MainMenu for updated Streamlit selector */
+}
+footer[data-testid="stFooter"] {
+  visibility: hidden; /* Updated selector for footer */
+}
 
-/* Hero section */
+/* Hero section styling */
 .hero {
-  background: linear-gradient(135deg, rgba(123,92,255,.22), rgba(0,214,214,.12));
-  border: 1px solid rgba(255,255,255,.08);
+  background: linear-gradient(
+    135deg,
+    rgba(123, 92, 255, 0.22),
+    rgba(0, 214, 214, 0.12)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
-  padding: 22px 22px 10px 22px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  margin-bottom: 1rem;
+  text-align: center;
 }
 .hero h1 {
-  margin: 0 0 6px 0;
-  font-size: 28px;
-  letter-spacing: .2px;
+  margin: 0 0 0.4rem 0;
+  font-size: clamp(1.8rem, 5vw, 2rem);
+  letter-spacing: 0.2px;
 }
 .hero p {
   margin: 0;
   color: var(--muted);
+  font-size: clamp(1rem, 3vw, 1.1rem);
 }
 
-/* Panels / cards */
+/* Panels/cards for content sections */
 .panel {
-  background: rgba(18,24,38,.88);
-  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(18, 24, 38, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  padding: 16px 16px 8px 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
 }
 
-/* Inputs & buttons */
+/* Input fields */
 .stTextInput > div > div > input,
-.stNumberInput input {
-  background: #0f1524 !important;
-  border: 1px solid rgba(255,255,255,.12) !important;
-  color: var(--text) !important;
-  border-radius: 10px !important;
+.stNumberInput > div > div > input {
+  background: #0f1524;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+.stTextInput > div > div > input:focus,
+.stNumberInput > div > div > input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--ring);
 }
 
+/* Buttons */
 .stButton > button {
   background: linear-gradient(135deg, var(--accent), #5a3dff);
   color: #fff;
   border: none;
   border-radius: 10px;
   padding: 0.55rem 0.9rem;
-  box-shadow: 0 6px 18px rgba(123,92,255,.35);
+  box-shadow: 0 6px 18px rgba(123, 92, 255, 0.35);
+  transition: all 0.2s ease;
 }
 .stButton > button:hover {
-  filter: brightness(1.07);
-  box-shadow: 0 8px 22px rgba(123,92,255,.5);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 22px rgba(123, 92, 255, 0.5);
+  transform: translateY(-1px);
+}
+.stButton > button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(123, 92, 255, 0.3);
 }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
   background: #0a0d15;
-  border-right: 1px solid rgba(255,255,255,.06);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1rem;
 }
 
 /* Tabs */
-.stTabs [data-baseweb="tab-list"] {
+div[data-testid="stTabs"] [role="tablist"] {
   gap: 6px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.stTabs [data-baseweb="tab"] {
-  background: rgba(255,255,255,.04);
+div[data-testid="stTabs"] [role="tab"] {
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 10px 10px 0 0;
-  padding: 10px 12px;
+  padding: 0.6rem 0.8rem;
+  color: var(--text);
+}
+div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+  background: var(--panel);
+  color: var(--accent);
 }
 
 /* Metrics */
 [data-testid="stMetricValue"] {
   color: #f1f3f6;
   font-weight: 700;
+  font-size: 1.5rem;
 }
 [data-testid="stMetricLabel"] {
   color: var(--muted);
+  font-size: 0.9rem;
 }
 
-/* Little status pills */
+/* Status pills */
 .pill {
-  display:inline-block;
-  padding: 4px 8px;
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.04);
-  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
   color: var(--text);
-  margin-right: 6px;
+  margin-right: 0.4rem;
 }
