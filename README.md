@@ -135,12 +135,8 @@ flowchart TD
 
   %% Link styling
   linkStyle default stroke:#6A7BAA,stroke-width:1.2px;
-
-
 ````
-
 ---
-
 ## Folder structure
 
 ```text
