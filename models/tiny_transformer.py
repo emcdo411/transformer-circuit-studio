@@ -2,15 +2,34 @@
 import torch
 import torch.nn as nn
 
+class TransformerLayer(nn.Module):
+    def __init__(self, d_model, nhead, dim_ff, dropout=0.1):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first=True)
+        self.ln1 = nn.LayerNorm(d_model)
+        self.ff = nn.Sequential(
+            nn.Linear(d_model, dim_ff),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(dim_ff, d_model)
+        )
+        self.ln2 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, need_weights=False):
+        attn_out, attn_w = self.attn(x, x, x, need_weights=need_weights)
+        x = self.ln1(x + self.dropout(attn_out))
+        ff_out = self.ff(x)
+        x = self.ln2(x + self.dropout(ff_out))
+        return x, attn_w
+
 class TinyTransformer(nn.Module):
     def __init__(self, vocab_size, num_classes, max_len, d_model, nhead, num_layers, dim_ff, dropout=0.1):
         super().__init__()
         self.token_emb = nn.Embedding(vocab_size, d_model)
         self.pos_emb = nn.Embedding(max_len, d_model)
         self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(
-                d_model=d_model, nhead=nhead, dim_feedforward=dim_ff, dropout=dropout, batch_first=True
-            ) for _ in range(num_layers)
+            TransformerLayer(d_model, nhead, dim_ff, dropout) for _ in range(num_layers)
         ])
         self.norm = nn.LayerNorm(d_model)
         self.head = nn.Linear(d_model, num_classes)
@@ -19,7 +38,7 @@ class TinyTransformer(nn.Module):
     def forward(self, x):
         h = self.embed_inputs(x)
         for layer in self.layers:
-            h = layer(h)
+            h, _ = layer(h, need_weights=False)
         h_last = self.norm(h[:, -1, :])
         return self.head(h_last)
 
@@ -34,10 +53,7 @@ class TinyTransformer(nn.Module):
         hs = [h]
         attns = []
         for layer in self.layers:
-            attn_out, attn_w = layer.attn(h, h, h, need_weights=return_attn, average_attn_weights=False)
-            h1 = layer.norm1(h + attn_out)
-            ff_out = layer.mlp(h1)
-            h = layer.norm2(h1 + ff_out)
+            h, attn_w = layer(h, need_weights=return_attn)
             hs.append(h)
             if return_attn:
                 attns.append(attn_w)
