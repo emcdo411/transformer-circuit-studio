@@ -37,21 +37,19 @@ It includes:
 - A tiny transformer trained on CPU for two tasks:
   - **Addition** (e.g., `12+7=` → `19`)
   - **Precalc Eval** (e.g., `(3+2)^2-4/2=` → `23`) using integer division (`/` → `//`)
-- A **Streamlit UI** to input expressions, predict results, and visualize **attention heatmaps** (with optional interpretability hooks like patching/ablations).
+- A **Streamlit UI** to input expressions, predict results, and visualize **attention heatmaps** (with optional interpretability hooks).
 - A clear, modular codebase for students, engineers, and researchers to extend.
 
 **Expected outcomes**
 - Train models to predict arithmetic results accurately.
 - Visualize how attention distributes over digits and operators.
-- Start reverse-engineering the model’s behavior from interpretable signals.
+- Begin reverse-engineering the model’s behavior from interpretable signals.
 
 ---
 
 ## Features
 - **Free & Local:** CPU-only; PyTorch + Streamlit.
-- **Two tasks:**
-  - **Addition** — predict sums like `12+7=`.
-  - **Precalc Eval** — `+ - * / ^ ( )` with integer results in a bounded range.
+- **Two tasks:** Addition and Precalc Eval (`+ - * / ^ ( )`, integer results).
 - **Modern UI:** Input box, predicted vs ground truth metrics, attention heatmaps.
 - **Extensible:** Swap in your model, tasks, and interpretability tools.
 - **Small checkpoints:** Saved under `models/checkpoints/` as `.pt` files.
@@ -60,28 +58,28 @@ It includes:
 
 ## Workflow
 ```mermaid
-flowchart TD
-    A[Start] --> B[Clone Repository]
-    B --> C[Create Virtual Environment]
-    C --> D[Install Dependencies]
-    D --> E{Choose Task}
-    E -->|Addition| F[Train Addition Model]
-    E -->|Precalc Eval| G[Train Precalc Model]
-    F --> H[Save addition_tiny.pt]
-    G --> I[Save precalc_tiny.pt]
-    H --> J[Run Streamlit App]
-    I --> J
-    J --> K[Select Mode: Auto/Addition/Precalc]
-    K --> L[Input Expression]
-    L --> M[Predict Result]
-    M --> N[Visualize Outputs]
-    N --> O[Attention Heatmaps]
-    N --> P[Logit Lens / Confidence (optional)]
-    O --> R[Analyze Model Behavior]
-    P --> R
-    R --> S[Extend: New Tasks / Tools]
-    S --> T[Commit & Push to GitHub]
-    T --> U[Optional: Deploy to HF Spaces]
+graph TD
+  A[Start] --> B[Clone repository]
+  B --> C[Create virtual environment]
+  C --> D[Install dependencies]
+  D --> E{Choose task}
+  E -->|Addition| F[Train Addition model]
+  E -->|Precalc Eval| G[Train Precalc model]
+  F --> H[Save addition_tiny.pt]
+  G --> I[Save precalc_tiny.pt]
+  H --> J[Run Streamlit app]
+  I --> J
+  J --> K[Select mode - Auto, Addition, Precalc]
+  K --> L[Input expression]
+  L --> M[Predict result]
+  M --> N[Visualize outputs]
+  N --> O[Attention heatmaps]
+  N --> P[Logit lens and confidence]
+  O --> R[Analyze model behavior]
+  P --> R
+  R --> S[Extend - new tasks or tools]
+  S --> T[Commit and push to GitHub]
+  T --> U[Optional - deploy to HF Spaces]
 ````
 
 ---
@@ -217,8 +215,6 @@ On Windows, you can also run:
 
 ## Optional: add PyTorch CPU
 
-Install wheels for local training on CPU:
-
 ```bash
 pip install --upgrade pip
 pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -254,7 +250,7 @@ Then train via the Streamlit sidebar.
   secondaryBackgroundColor = "#121826"
   textColor = "#e6e6e6"
   ```
-* Add `app/assets/styles.css` and load via `app.py` (already wired if using the provided code).
+* Add `app/assets/styles.css` and load via `app.py` (already wired in the provided code).
 
 **PowerShell: scripts disabled**
 
