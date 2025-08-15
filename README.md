@@ -59,61 +59,59 @@ It includes:
 ## Workflow
 ```mermaid
 flowchart TD
-  %% ======= STYLE DEFINITIONS (dark, boardroom look) =======
-  classDef startEnd fill:#0B1220,stroke:#7B5CFF,stroke-width:2px,color:#EAEFF7,rx:12,ry:12;
-  classDef action   fill:#121826,stroke:#2B395B,stroke-width:1.2px,color:#EAEFF7,rx:10,ry:10;
-  classDef decision fill:#172235,stroke:#00D6D6,stroke-width:2px,color:#EAEFF7,rx:8,ry:8;
-  classDef output   fill:#0F1A2B,stroke:#5A3DFF,stroke-width:1.5px,color:#FFFFFF,rx:10,ry:10;
-  classDef artifact fill:#0C1C20,stroke:#4DB6AC,stroke-width:1.5px,color:#DFF7F7,rx:10,ry:10,stroke-dasharray: 5 3;
-  classDef optional fill:#1A1F2E,stroke:#9AA4AF,stroke-width:1px,color:#CFD6DF,rx:10,ry:10,stroke-dasharray: 6 4;
+  %% -------- Styles (dark, professional) --------
+  classDef startEnd fill:#0B1220,stroke:#7B5CFF,stroke-width:2px,color:#EAEFF7;
+  classDef action   fill:#121826,stroke:#2B395B,stroke-width:1.2px,color:#EAEFF7;
+  classDef decision fill:#172235,stroke:#00D6D6,stroke-width:2px,color:#EAEFF7;
+  classDef output   fill:#0F1A2B,stroke:#5A3DFF,stroke-width:1.5px,color:#FFFFFF;
+  classDef artifact fill:#0C1C20,stroke:#4DB6AC,stroke-width:1.5px,color:#DFF7F7;
+  classDef optional fill:#1A1F2E,stroke:#9AA4AF,stroke-width:1px,color:#CFD6DF;
 
-  %% ======= LANE: SETUP =======
+  %% -------- Setup lane --------
   subgraph L0[Setup]
     direction TB
     A([Start]):::startEnd
     B[Clone repository]:::action
-    C[Create virtual environment (.venv)]:::action
-    D[Install dependencies<br/>(requirements + PyTorch CPU)]:::action
-    A-->B-->C-->D
+    C[Create virtual env .venv]:::action
+    D[Install dependencies]:::action
+    A --> B --> C --> D
   end
 
-  %% ======= LANE: TRAIN =======
+  %% -------- Train lane --------
   subgraph L1[Train (CPU)]
     direction TB
     E{Choose task}:::decision
     F[Train Addition model]:::action
     G[Train Precalc model]:::action
-    H[[Save checkpoint:<br/>models/checkpoints/addition_tiny.pt]]:::artifact
-    I[[Save checkpoint:<br/>models/checkpoints/precalc_tiny.pt]]:::artifact
+    H[[Save checkpoint: addition_tiny.pt]]:::artifact
+    I[[Save checkpoint: precalc_tiny.pt]]:::artifact
     E -->|Addition| F --> H
-    E -->|Precalc Eval| G --> I
+    E -->|Precalc| G --> I
   end
 
-  %% Merge: any checkpoint ready
-  J((Checkpoint ready)):::output
+  %% Merge
+  J([Checkpoint ready]):::output
   D --> E
   H --> J
   I --> J
 
-  %% ======= LANE: APP =======
+  %% -------- App lane --------
   subgraph L2[Streamlit App]
     direction TB
-    K[Run Streamlit<br/>python -m streamlit run app/app.py]:::action
+    K[Run app: streamlit run app/app.py]:::action
     L{Select mode}:::decision
-    Lnote[Auto: route by input<br/>Addition: force simple sums<br/>Precalc: force expression eval]:::optional
-    M[Input expression<br/>(must end with '=')]:::action
-    N[Predict result<br/>(model forward → logits → argmax)]:::output
+    M[Input expression (end with =)]:::action
+    N[Predict result]:::output
     K --> L --> M --> N
-    L -- Auto / Addition / Precalc --> Lnote
   end
 
-  %% ======= LANE: INTERPRET =======
+  %% -------- Interpret lane --------
   subgraph L3[Interpretability]
     direction TB
-    O[Attention heatmaps<br/>(per layer • head)]:::output
-    P[Logit lens & confidence<br/>(optional)]:::output
+    O[Attention heatmaps]:::output
+    P[Logit lens and confidence]:::output
     Q{Meets expectations?}:::decision
-    R[Analyze behavior<br/>(tokens, heads, patterns)]:::action
+    R[Analyze model behavior]:::action
     N --> O
     N --> P
     O --> R
@@ -121,23 +119,23 @@ flowchart TD
     R --> Q
   end
 
-  %% ======= LANE: ITERATE & SHIP =======
-  subgraph L4[Iterate & Ship]
+  %% -------- Iterate & Ship lane --------
+  subgraph L4[Iterate and Ship]
     direction TB
-    S[Extend: new tasks, hooks,<br/>patching, ablations]:::action
-    T[Commit & push to GitHub]:::action
-    U[Optional deploy:<br/>Hugging Face Spaces]:::optional
+    S[Extend: new tasks or tools]:::action
+    T[Commit and push to GitHub]:::action
+    U[Optional: deploy to HF Spaces]:::optional
     Q -- Yes --> T
     Q -- No  --> S --> T
     T --> U
   end
 
-  %% Extra linking for flow
+  %% Final link
   J --> K
 
-  %% ======= LINK STYLING =======
-  linkStyle default stroke:#6A7BAA,stroke-width:1.2px,color:#CFE3FF;
-  linkStyle 5,6,9,12 stroke:#00D6D6,stroke-width:1.6px;  %% key decision edges
+  %% Link styling
+  linkStyle default stroke:#6A7BAA,stroke-width:1.2px;
+
 
 ````
 
